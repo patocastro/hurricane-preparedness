@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
-import { useLanguage } from "../../emergency-app/src/i18n/LanguageContext";
 import { AppScreen } from "../../src/components/AppScreen";
 import { SectionCard } from "../../src/components/SectionCard";
+import { useLanguage } from "../../src/languages/LanguageContext";
 import { colors } from "../../src/theme/colors";
 
 export default function WeatherScreen() {
