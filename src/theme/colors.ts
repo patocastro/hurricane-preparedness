@@ -1,0 +1,15 @@
+export const colors = {
+  navy: "#123047",
+  ocean: "#1D6F8C",
+  blue: "#2C92B8",
+  sky: "#DDF2F8",
+  danger: "#C83E3E",
+  warning: "#F4A340",
+  success: "#3E8E62",
+  background: "#F5F8FA",
+  surface: "#FFFFFF",
+  text: "#173042",
+  mutedText: "#6E7E88",
+  border: "#DCE5E9",
+  white: "#FFFFFF",
+};
