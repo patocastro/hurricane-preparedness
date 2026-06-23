@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { SQLiteProvider } from "expo-sqlite";
 
 import { migrateDbIfNeeded } from "../src/db/migrations";
-import { LanguageProvider } from "../src/i18n/LanguageContext";
+import { LanguageProvider } from "../emergency-app/src/i18n/LanguageContext";
 
 export default function RootLayout() {
   return (
