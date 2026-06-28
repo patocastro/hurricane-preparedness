@@ -1,61 +1,146 @@
-import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppScreen } from "../../src/components/AppScreen";
 import { SectionCard } from "../../src/components/SectionCard";
-import { colors } from "../../src/theme/colors";
 import { useLanguage } from "../../src/languages/LanguageContext";
+import { colors } from "../../src/theme/colors";
+
+const LINKS = {
+  procivy: "https://www.yucatan.gob.mx/procivy/boletin.php",
+  noaa: "https://www.nhc.noaa.gov/",
+};
 
 export default function NewsScreen() {
   const { t } = useLanguage();
+  async function openLink(url: string) {
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    }
+  }
 
   return (
     <AppScreen>
-      <SectionCard title={t("latestBulletins")}>
-        <View style={styles.alert}>
-          <Ionicons name="information-circle" size={28} color={colors.ocean} />
-          <View style={styles.alertContent}>
-            <Text style={styles.alertTitle}>{t("demoBulletinTitle")}</Text>
-            <Text style={styles.alertText}>{t("demoBulletinContent")}</Text>
-            <Text style={styles.source}>{t("officialInformation")}</Text>
+      <SectionCard title={t("officialSources")}>
+        <Text style={styles.description}>
+          {t("officialSourcesDescription")}
+        </Text>
+        <Pressable
+          style={styles.sourceCard}
+          onPress={() => openLink(LINKS.procivy)}
+        >
+          <View style={[styles.iconBox, styles.procivyIcon]}>
+            <Ionicons name="shield-checkmark-outline" size={28} color={colors.white} />
           </View>
-        </View>
+          <View style={styles.sourceContent}>
+            <Text style={styles.sourceTitle}>
+              {t("procivyTitle")}
+            </Text>
+
+            <Text style={styles.sourceDescription}>
+              {t("procivyDescription")}
+            </Text>
+          </View>
+          <Ionicons
+            name="open-outline"
+            size={22}
+            color={colors.mutedText}
+          />
+        </Pressable>
+        <Pressable
+          style={styles.sourceCard}
+          onPress={() => openLink(LINKS.noaa)}
+        >
+          <View style={[styles.iconBox, styles.noaaIcon]}>
+            <Ionicons name="cloudy-night-outline" size={28} color={colors.white} />
+          </View>
+          <View style={styles.sourceContent}>
+            <Text style={styles.sourceTitle}>
+              {t("noaaTitle")}
+            </Text>
+            <Text style={styles.sourceDescription}>
+              {t("noaaDescription")}
+            </Text>
+          </View>
+          <Ionicons
+            name="open-outline"
+            size={22}
+            color={colors.mutedText}
+          />
+        </Pressable>
       </SectionCard>
-      <SectionCard title={t("news")}>
-        <Text style={styles.empty}>{t("noBulletins")}</Text>
+      <SectionCard title={t("latestBulletins")}>
+        <View style={styles.infoBox}>
+          <Ionicons
+            name="information-circle-outline"
+            size={25}
+            color={colors.ocean}
+          />
+          <Text style={styles.infoText}>
+            {t("bulletinsInfo")}
+          </Text>
+        </View>
       </SectionCard>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  alert: {
+  description: {
+    color: colors.mutedText,
+    lineHeight: 20,
+    marginBottom: 4
+  },
+  sourceCard: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 12,
-    alignItems: "flex-start"
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 14
   },
-  alertContent: {
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  procivyIcon: {
+    backgroundColor: colors.success
+  },
+  noaaIcon: {
+    backgroundColor: colors.ocean
+  },
+
+  sourceContent: {
     flex: 1,
-    gap: 5
+    gap: 4
   },
-  
-  alertTitle: {
-    fontSize: 16,
+  sourceTitle: {
     color: colors.text,
+    fontSize: 16,
     fontWeight: "700"
   },
 
-  alertText: {
-    color: colors.text,
-    lineHeight: 20
+  sourceDescription: {
+    color: colors.mutedText,
+    fontSize: 13,
+    lineHeight: 18
   },
 
-  source: {
-    color: colors.ocean,
-    fontWeight: "600",
-    marginTop: 4
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10
   },
-  empty: {
-    color: colors.mutedText
+
+  infoText: {
+    flex: 1,
+    color: colors.text,
+    lineHeight: 20
   }
 });

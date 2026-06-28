@@ -1,9 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppScreen } from "../../src/components/AppScreen";
+import { MunicipalityPicker } from "../../src/components/MunicipalityPicker";
 import { SectionCard } from "../../src/components/SectionCard";
+import {
+  municipalities,
+  Municipality,
+} from "../../src/data/municipalities";
 import { useLanguage } from "../../src/languages/LanguageContext";
 import { getWeatherConditionKey } from "../../src/services/weatherCodes";
 import { CurrentWeather, getCurrentWeather } from "../../src/services/weatherService";
@@ -16,23 +21,30 @@ export default function WeatherScreen() {
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    async function loadWeather() {
-      try {
-        setLoading(true);
-        setHasError(false);
+  const [municipality, setMunicipality] = useState<Municipality>(
+    municipalities[0]
+  );
 
-        const result = await getCurrentWeather();
-        setWeather(result);
-      } catch {
-        setHasError(true);
-      } finally {
-        setLoading(false);
-      }
+  const [showMunicipalityPicker, setShowMunicipalityPicker] =
+    useState(false);
+
+  const loadWeather = useCallback(async () => {
+    try {
+      setLoading(true);
+      setHasError(false);
+
+      const result = await getCurrentWeather(municipality);
+      setWeather(result);
+    } catch {
+      setHasError(true);
+    } finally {
+      setLoading(false);
     }
+  }, [municipality]);
 
+  useEffect(() => {
     loadWeather();
-  }, []);
+  }, [loadWeather]);
 
   const condition = weather
     ? t(getWeatherConditionKey(weather.weatherCode) as never)
@@ -41,8 +53,38 @@ export default function WeatherScreen() {
   return (
     <AppScreen>
       <View style={styles.hero}>
-        <Text style={styles.location}>Mérida, Yucatán</Text>
-
+        <View style={styles.locationRow}>
+          <Text style={styles.location}>
+            {municipality.name}, Yucatán
+          </Text>
+          <View style={styles.locationButtons}>
+            <Pressable
+              style={styles.changeMunicipalityButton}
+              onPress={() => setShowMunicipalityPicker(true)}
+            >
+              <Text style={styles.changeMunicipalityText}>
+                {t("changeMunicipality")}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.refreshButton,
+                loading && styles.disabledButton,
+              ]}
+              onPress={loadWeather}
+              disabled={loading}
+            >
+              <Ionicons
+                name="refresh-outline"
+                size={18}
+                color={colors.white}
+              />
+              <Text style={styles.refreshButtonText}>
+                {t("refreshWeather")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
         <Ionicons
           name="partly-sunny-outline"
           size={76}
@@ -94,6 +136,13 @@ export default function WeatherScreen() {
           </View>
         )}
       </SectionCard>
+      <MunicipalityPicker
+        visible={showMunicipalityPicker}
+        selectedMunicipality={municipality}
+        municipalities={municipalities}
+        onClose={() => setShowMunicipalityPicker(false)}
+        onSelect={setMunicipality}
+      />
     </AppScreen>
   );
 }
@@ -104,13 +153,59 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 26,
     alignItems: "center",
-    gap: 6
+    gap: 10
+  },
+  locationRow: {
+    width: "100%",
+    alignItems: "center",
+    gap: 8
   },
   location: {
     color: colors.white,
     fontSize: 17,
     fontWeight: "600"
   },
+
+  locationButtons: {
+    flexDirection: "row",
+    gap: 8
+  },
+
+  changeMunicipalityButton: {
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+
+  changeMunicipalityText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+
+  refreshButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+
+  disabledButton: {
+    opacity: 0.5
+  },
+
+  refreshButtonText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+
   temperature: {
     color: colors.white,
     fontSize: 62,
@@ -120,7 +215,8 @@ const styles = StyleSheet.create({
   condition: {
     color: colors.white,
     fontSize: 16,
-    opacity: 0.9
+    opacity: 0.9,
+    textAlign: "center"
   },
   metrics: {
     flexDirection: "row",
@@ -134,10 +230,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: "700",
     fontSize: 17,
-    marginTop: 4,
+    marginTop: 4
   },
 
   loadingText: {
-    color: colors.mutedText,
+    color: colors.mutedText
   }
 });
