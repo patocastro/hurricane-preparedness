@@ -1,10 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { AppScreen } from "../../src/components/AppScreen";
 import { SectionCard } from "../../src/components/SectionCard";
-import { useLanguage } from "../../src/languages/LanguageContext";
 import { colors } from "../../src/theme/colors";
+import { useLanguage } from "../../src/languages/LanguageContext";
 
 const demoTasks = [
   {

@@ -1,9 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-import { LanguageSwitch } from "../../src/components/LanguageSwitch";
-import { useLanguage } from "../../src/languages/LanguageContext";
 import { colors } from "../../src/theme/colors";
+import { useLanguage } from "../../src/languages/LanguageContext";
+import { LanguageSwitch } from "../../src/components/LanguageSwitch";
 
 
 export default function TabsLayout() {

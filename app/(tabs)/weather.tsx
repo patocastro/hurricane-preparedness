@@ -1,13 +1,43 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { AppScreen } from "../../src/components/AppScreen";
 import { SectionCard } from "../../src/components/SectionCard";
 import { useLanguage } from "../../src/languages/LanguageContext";
+import { getWeatherConditionKey } from "../../src/services/weatherCodes";
+import { CurrentWeather, getCurrentWeather } from "../../src/services/weatherService";
 import { colors } from "../../src/theme/colors";
 
 export default function WeatherScreen() {
   const { t } = useLanguage();
+
+  const [weather, setWeather] = useState<CurrentWeather | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    async function loadWeather() {
+      try {
+        setLoading(true);
+        setHasError(false);
+
+        const result = await getCurrentWeather();
+        setWeather(result);
+      } catch {
+        setHasError(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadWeather();
+  }, []);
+
+  const condition = weather
+    ? t(getWeatherConditionKey(weather.weatherCode) as never)
+    : "";
+
   return (
     <AppScreen>
       <View style={styles.hero}>
@@ -18,24 +48,51 @@ export default function WeatherScreen() {
           size={76}
           color={colors.white}
         />
-        <Text style={styles.temperature}>31°</Text>
-        <Text style={styles.condition}>{t("demoWeather")}</Text>
+
+        {loading && <ActivityIndicator color={colors.white} />}
+
+        {hasError && (
+          <Text style={styles.condition}>{t("weatherError")}</Text>
+        )}
+
+        {!loading && !hasError && weather && (
+          <>
+            <Text style={styles.temperature}>
+              {Math.round(weather.temperature)}°
+            </Text>
+
+            <Text style={styles.condition}>{condition}</Text>
+          </>
+        )}
       </View>
+
       <SectionCard title={t("currentConditions")}>
-        <View style={styles.metrics}>
-          <View>
-            <Text style={styles.metricLabel}>{t("humidity")}</Text>
-            <Text style={styles.metricValue}>72%</Text>
+        {loading && (
+          <Text style={styles.loadingText}>{t("weatherLoading")}</Text>
+        )}
+
+        {!loading && !hasError && weather && (
+          <View style={styles.metrics}>
+            <View>
+              <Text style={styles.metricLabel}>{t("humidity")}</Text>
+              <Text style={styles.metricValue}>{weather.humidity}%</Text>
+            </View>
+
+            <View>
+              <Text style={styles.metricLabel}>{t("wind")}</Text>
+              <Text style={styles.metricValue}>
+                {Math.round(weather.windSpeed)} km/h
+              </Text>
+            </View>
+
+            <View>
+              <Text style={styles.metricLabel}>{t("temperature")}</Text>
+              <Text style={styles.metricValue}>
+                {Math.round(weather.temperature)}° C
+              </Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.metricLabel}>{t("wind")}</Text>
-            <Text style={styles.metricValue}>18 km/h</Text>
-          </View>
-          <View>
-            <Text style={styles.metricLabel}>{t("temperature")}</Text>
-            <Text style={styles.metricValue}>31° C</Text>
-          </View>
-        </View>
+        )}
       </SectionCard>
     </AppScreen>
   );
@@ -77,6 +134,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: "700",
     fontSize: 17,
-    marginTop: 4
+    marginTop: 4,
+  },
+
+  loadingText: {
+    color: colors.mutedText,
   }
 });

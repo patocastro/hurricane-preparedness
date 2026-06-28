@@ -15,7 +15,7 @@ export default function MapScreen() {
         <Ionicons name="map-outline" size={74} color={colors.ocean} />
         <Text style={styles.placeholderTitle}>{t("map")}</Text>
         <Text style={styles.placeholderText}>
-          Aquí irá el mapa con refugios, hospitales y puntos de ayuda.
+          {t("mapPlaceholderText")}
         </Text>
       </View>
 
