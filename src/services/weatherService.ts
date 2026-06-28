@@ -1,3 +1,5 @@
+import type { Municipality } from "../data/municipalities";
+
 export type CurrentWeather = {
   temperature: number;
   humidity: number;
@@ -6,15 +8,12 @@ export type CurrentWeather = {
   updatedAt: string;
 };
 
-const MERIDA = {
-  latitude: 20.9674,
-  longitude: -89.5926,
-};
-
-export async function getCurrentWeather(): Promise<CurrentWeather> {
+export async function getCurrentWeather(
+  municipality: Municipality
+): Promise<CurrentWeather> {
   const params = new URLSearchParams({
-    latitude: String(MERIDA.latitude),
-    longitude: String(MERIDA.longitude),
+    latitude: String(municipality.latitude),
+    longitude: String(municipality.longitude),
     current:
       "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
     timezone: "America/Merida",
