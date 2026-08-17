@@ -1,8 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 
 import { AppScreen } from "../../src/components/AppScreen";
 import { SectionCard } from "../../src/components/SectionCard";
+import { shelters } from "../../src/data/shelters";
 import { useLanguage } from "../../src/languages/LanguageContext";
 import { colors } from "../../src/theme/colors";
 
@@ -11,12 +12,28 @@ export default function MapScreen() {
 
   return (
     <AppScreen>
-      <View style={styles.placeholder}>
-        <Ionicons name="map-outline" size={74} color={colors.ocean} />
-        <Text style={styles.placeholderTitle}>{t("map")}</Text>
-        <Text style={styles.placeholderText}>
-          {t("mapPlaceholderText")}
-        </Text>
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: 20.9674,
+            longitude: -89.5926,
+            latitudeDelta: 0.18,
+            longitudeDelta: 0.18,
+          }}
+        >
+          {shelters.map((shelter) => (
+            <Marker
+              key={shelter.id}
+              coordinate={{
+                latitude: shelter.latitude,
+                longitude: shelter.longitude,
+              }}
+              title={shelter.name}
+              description={shelter.address}
+            />
+          ))}
+        </MapView>
       </View>
 
       <SectionCard title={t("safePlaces")}>
@@ -29,26 +46,15 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  placeholder: {
-    height: 300,
-    backgroundColor: colors.sky,
+  mapContainer: {
+    height: 350,
     borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 28,
-    gap: 10
+    overflow: "hidden"
   },
-  placeholderTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "700"
+  map: {
+    width: "100%",
+    height: "100%"
   },
-  placeholderText: {
-    color: colors.mutedText,
-    textAlign: "center",
-    lineHeight: 20
-  },
-  
   item: {
     color: colors.text,
     fontSize: 16,
