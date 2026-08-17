@@ -30,6 +30,9 @@ export default function WeatherScreen() {
   const [weatherMunicipality, setWeatherMunicipality] =
     useState<Municipality | null>(null);
 
+  const [requestedMunicipality, setRequestedMunicipality] =
+    useState<Municipality | null>(null);
+
   const [showMunicipalityPicker, setShowMunicipalityPicker] =
     useState(false);
 
@@ -43,6 +46,7 @@ export default function WeatherScreen() {
       setWeatherMunicipality(municipality);
       setLastUpdated(new Date());
       setIsStale(false);
+      setRequestedMunicipality(null);
     } catch (error) {
       console.log("Weather update failed:", error);
       if (weather) {
@@ -52,11 +56,14 @@ export default function WeatherScreen() {
       setLoading(false);
     }
   }, [municipality, weather]);
-
   useEffect(() => {
     loadWeather();
   }, [municipality]);
-
+  const handleMunicipalitySelect = (selected: Municipality) => {
+    setRequestedMunicipality(selected);
+    setMunicipality(selected);
+    setShowMunicipalityPicker(false);
+  };
   const condition = weather
     ? t(getWeatherConditionKey(weather.weatherCode) as never)
     : "";
@@ -68,14 +75,19 @@ export default function WeatherScreen() {
       })
     : "";
 
+  const displayedMunicipality = weatherMunicipality ?? municipality;
+  const municipalityChangedWithoutUpdate =
+    isStale &&
+    requestedMunicipality &&
+    weatherMunicipality &&
+    requestedMunicipality.name !== weatherMunicipality.name;
+
   return (
     <AppScreen>
       <View style={styles.hero}>
         <View style={styles.locationRow}>
           <Text style={styles.location}>
-            {weatherMunicipality
-              ? `${weatherMunicipality.name}, Yucatán`
-              : `${municipality.name}, Yucatán`}
+            {displayedMunicipality.name}, Yucatán
           </Text>
           <View style={styles.locationButtons}>
             <Pressable
@@ -130,7 +142,7 @@ export default function WeatherScreen() {
                   color={colors.white}
                 />
                 <Text style={styles.lastUpdated}>
-                  Actualizado a las {formattedLastUpdated}
+                  {t("lastUpdated")} {formattedLastUpdated}
                 </Text>
               </View>
             )}
@@ -138,15 +150,27 @@ export default function WeatherScreen() {
               <View style={styles.staleContainer}>
                 <Ionicons
                   name="warning-outline"
-                  size={16}
+                  size={18}
                   color={colors.white}
                 />
-                <Text style={styles.staleText}>
-                  Datos no actualizados
-                  {lastUpdated
-                    ? ` · Última actualización ${formattedLastUpdated}`
-                    : ""}
-                </Text>
+                <View style={styles.staleTextContainer}>
+                  {municipalityChangedWithoutUpdate &&
+                    requestedMunicipality && (
+                      <Text style={styles.staleTitle}>
+                        {t("municipalityUpdateFailed")}{" "}
+                        {requestedMunicipality.name}.
+                      </Text>
+                    )}
+                  <Text style={styles.staleText}>
+                    {t("showingLastDataFrom")}{" "}
+                    {displayedMunicipality.name}
+                    {lastUpdated
+                      ? ` · ${t(
+                          "lastSuccessfulUpdate"
+                        )} ${formattedLastUpdated}`
+                      : ""}
+                  </Text>
+                </View>
               </View>
             )}
           </>
@@ -186,7 +210,7 @@ export default function WeatherScreen() {
         selectedMunicipality={municipality}
         municipalities={municipalities}
         onClose={() => setShowMunicipalityPicker(false)}
-        onSelect={setMunicipality}
+        onSelect={handleMunicipalitySelect}
       />
     </AppScreen>
   );
@@ -276,21 +300,32 @@ const styles = StyleSheet.create({
     opacity: 0.75
   },
   staleContainer: {
+    width: "100%",
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    marginTop: 2,
-    paddingHorizontal: 10
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.12)"
+  },
+  staleTextContainer: {
+    flex: 1
+  },
+
+  staleTitle: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 2
   },
 
   staleText: {
     color: colors.white,
     fontSize: 12,
-    fontWeight: "600",
-    opacity: 0.9,
-    textAlign: "center",
-    flexShrink: 1
+    lineHeight: 17,
+    opacity: 0.9
   },
 
   metrics: {
