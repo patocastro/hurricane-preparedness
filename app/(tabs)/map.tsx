@@ -38,8 +38,7 @@ export default function MapScreen() {
 
       <SectionCard title={t("safePlaces")}>
         <Text style={styles.item}>• {t("shelters")}</Text>
-        <Text style={styles.item}>• {t("hospitals")}</Text>
-        <Text style={styles.item}>• {t("emergencyServices")}</Text>
+
       </SectionCard>
     </AppScreen>
   );
@@ -47,7 +46,7 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   mapContainer: {
-    height: 350,
+    height: 500,
     borderRadius: 24,
     overflow: "hidden"
   },
@@ -55,9 +54,10 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%"
   },
+  
   item: {
     color: colors.text,
     fontSize: 16,
     marginBottom: 8
-  }
+  },
 });
