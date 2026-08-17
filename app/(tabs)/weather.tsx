@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppScreen } from "../../src/components/AppScreen";
@@ -19,11 +19,16 @@ export default function WeatherScreen() {
 
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isStale, setIsStale] = useState(false);
 
   const [municipality, setMunicipality] = useState<Municipality>(
     municipalities[0]
   );
+
+  const [weatherMunicipality, setWeatherMunicipality] =
+    useState<Municipality | null>(null);
 
   const [showMunicipalityPicker, setShowMunicipalityPicker] =
     useState(false);
@@ -31,23 +36,36 @@ export default function WeatherScreen() {
   const loadWeather = useCallback(async () => {
     try {
       setLoading(true);
-      setHasError(false);
 
       const result = await getCurrentWeather(municipality);
+
       setWeather(result);
-    } catch {
-      setHasError(true);
+      setWeatherMunicipality(municipality);
+      setLastUpdated(new Date());
+      setIsStale(false);
+    } catch (error) {
+      console.log("Weather update failed:", error);
+      if (weather) {
+        setIsStale(true);
+      }
     } finally {
       setLoading(false);
     }
-  }, [municipality]);
+  }, [municipality, weather]);
 
   useEffect(() => {
     loadWeather();
-  }, [loadWeather]);
+  }, [municipality]);
 
   const condition = weather
     ? t(getWeatherConditionKey(weather.weatherCode) as never)
+    : "";
+
+  const formattedLastUpdated = lastUpdated
+    ? lastUpdated.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "";
 
   return (
@@ -55,7 +73,9 @@ export default function WeatherScreen() {
       <View style={styles.hero}>
         <View style={styles.locationRow}>
           <Text style={styles.location}>
-            {municipality.name}, Yucatán
+            {weatherMunicipality
+              ? `${weatherMunicipality.name}, Yucatán`
+              : `${municipality.name}, Yucatán`}
           </Text>
           <View style={styles.locationButtons}>
             <Pressable
@@ -91,29 +111,54 @@ export default function WeatherScreen() {
           color={colors.white}
         />
 
-        {loading && <ActivityIndicator color={colors.white} />}
-
-        {hasError && (
-          <Text style={styles.condition}>{t("weatherError")}</Text>
+        {loading && !weather && (
+          <ActivityIndicator color={colors.white} />
         )}
 
-        {!loading && !hasError && weather && (
+        {weather && (
           <>
             <Text style={styles.temperature}>
               {Math.round(weather.temperature)}°
             </Text>
 
             <Text style={styles.condition}>{condition}</Text>
+            {!isStale && lastUpdated && (
+              <View style={styles.statusRow}>
+                <Ionicons
+                  name="time-outline"
+                  size={14}
+                  color={colors.white}
+                />
+                <Text style={styles.lastUpdated}>
+                  Actualizado a las {formattedLastUpdated}
+                </Text>
+              </View>
+            )}
+            {isStale && (
+              <View style={styles.staleContainer}>
+                <Ionicons
+                  name="warning-outline"
+                  size={16}
+                  color={colors.white}
+                />
+                <Text style={styles.staleText}>
+                  Datos no actualizados
+                  {lastUpdated
+                    ? ` · Última actualización ${formattedLastUpdated}`
+                    : ""}
+                </Text>
+              </View>
+            )}
           </>
         )}
       </View>
 
       <SectionCard title={t("currentConditions")}>
-        {loading && (
+        {loading && !weather && (
           <Text style={styles.loadingText}>{t("weatherLoading")}</Text>
         )}
 
-        {!loading && !hasError && weather && (
+        {weather && (
           <View style={styles.metrics}>
             <View>
               <Text style={styles.metricLabel}>{t("humidity")}</Text>
@@ -218,6 +263,36 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     textAlign: "center"
   },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2
+  },
+
+  lastUpdated: {
+    color: colors.white,
+    fontSize: 12,
+    opacity: 0.75
+  },
+  staleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    marginTop: 2,
+    paddingHorizontal: 10
+  },
+
+  staleText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: "600",
+    opacity: 0.9,
+    textAlign: "center",
+    flexShrink: 1
+  },
+
   metrics: {
     flexDirection: "row",
     justifyContent: "space-between"
