@@ -37,3 +37,4 @@ yarn-error.*
 *.tsbuildinfo
 
 .vscode/
+vscode-userdata:/home/cresoft/.config/Code/User
