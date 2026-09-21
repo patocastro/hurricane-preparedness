@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 2;
+  const DATABASE_VERSION = 3;
 
   const result = await db.getFirstAsync<{ user_version: number }>(
     "PRAGMA user_version"
@@ -85,6 +85,15 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 
     currentVersion = 2;
   }
+
+  if (currentVersion === 2) {
+  await db.execAsync(`
+    ALTER TABLE weather_cache ADD COLUMN humidity REAL;
+    ALTER TABLE weather_cache ADD COLUMN wind_speed REAL;
+    ALTER TABLE weather_cache ADD COLUMN weather_code INTEGER;
+  `);
+  currentVersion = 3;
+}
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
 
 import { AppScreen } from "../../src/components/AppScreen";
 import { MunicipalityPicker } from "../../src/components/MunicipalityPicker";
@@ -14,8 +15,19 @@ import { getWeatherConditionKey } from "../../src/services/weatherCodes";
 import { CurrentWeather, getCurrentWeather } from "../../src/services/weatherService";
 import { colors } from "../../src/theme/colors";
 
+type CachedWeather = {
+  id: number;
+  location_name: string;
+  temperature: number | null;
+  humidity: number | null;
+  wind_speed: number | null;
+  weather_code: number | null;
+  updated_at: string;
+};
+
 export default function WeatherScreen() {
   const { t } = useLanguage();
+  const db = useSQLiteContext();
 
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +48,96 @@ export default function WeatherScreen() {
   const [showMunicipalityPicker, setShowMunicipalityPicker] =
     useState(false);
 
+  const saveWeatherToCache = async (
+    municipalityName: string,
+    data: CurrentWeather
+  ) => {
+    try {
+      await db.runAsync(
+        `
+        DELETE FROM weather_cache
+        WHERE location_name = ?
+        `,
+        municipalityName
+      );
+      await db.runAsync(
+        `
+        INSERT INTO weather_cache (
+          location_name,
+          temperature,
+          humidity,
+          wind_speed,
+          weather_code,
+          condition_es,
+          condition_en,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        municipalityName,
+        data.temperature,
+        data.humidity,
+        data.windSpeed,
+        data.weatherCode,
+        "",
+        "",
+        new Date().toISOString()
+      );
+    } catch (error) {
+      console.log("Could not save weather cache:", error);
+    }
+  };
+  const loadWeatherFromCache = async (
+    selectedMunicipality: Municipality
+  ): Promise<boolean> => {
+    try {
+      const cached = await db.getFirstAsync<CachedWeather>(
+        `
+        SELECT
+          id,
+          location_name,
+          temperature,
+          humidity,
+          wind_speed,
+          weather_code,
+          updated_at
+        FROM weather_cache
+        WHERE location_name = ?
+        ORDER BY updated_at DESC
+        LIMIT 1
+        `,
+        selectedMunicipality.name
+      );
+      if (!cached) {
+        return false;
+      }
+      if (
+        cached.temperature === null ||
+        cached.humidity === null ||
+        cached.wind_speed === null ||
+        cached.weather_code === null
+      ) {
+        return false;
+      }
+      const cachedWeather: CurrentWeather = {
+        temperature: cached.temperature,
+        humidity: cached.humidity,
+        windSpeed: cached.wind_speed,
+        weatherCode: cached.weather_code,
+        updatedAt: cached.updated_at
+      };
+      setWeather(cachedWeather);
+      setWeatherMunicipality(selectedMunicipality);
+      setLastUpdated(new Date(cached.updated_at));
+      setIsStale(true);
+      setRequestedMunicipality(null);
+      return true;
+    } catch (error) {
+      console.log("Could not load weather cache:", error);
+      return false;
+    }
+  };
+
   const loadWeather = useCallback(async () => {
     try {
       setLoading(true);
@@ -47,9 +149,11 @@ export default function WeatherScreen() {
       setLastUpdated(new Date());
       setIsStale(false);
       setRequestedMunicipality(null);
+      await saveWeatherToCache(municipality.name, result);
     } catch (error) {
       console.log("Weather update failed:", error);
-      if (weather) {
+      const cacheAvailable = await loadWeatherFromCache(municipality);
+      if (!cacheAvailable && weather) {
         setIsStale(true);
       }
     } finally {
