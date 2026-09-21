@@ -62,6 +62,21 @@ export const translations = {
     demoWeather: "Parcialmente nublado",
     demoBulletinTitle: "Boletín preventivo",
     demoBulletinContent: "Mantente informado mediante fuentes oficiales y revisa tu plan familiar.",
+    addLocation: "Agregar ubicación",
+    locationName: "Nombre",
+    locationNamePlaceholder: "Ej. Punto de reunión familiar",
+    locationType: "Tipo",
+    locationNotes: "Notas",
+    locationNotesPlaceholder: "Información adicional opcional",
+    selectLocation: "Seleccionar ubicación",
+    selectLocationHelp: "Mantén presionado el mapa para seleccionar una ubicación.",
+    personalLocation: "Ubicación personal",
+    meetingPoint: "Punto de reunión",
+    other: "Otro",
+    saveLocation: "Guardar ubicación",
+    deleteLocation: "Eliminar ubicación",
+    deleteLocationConfirm: "¿Deseas eliminar esta ubicación?",
+    locationRequired: "Selecciona una ubicación en el mapa"
   },
 
   en: {
@@ -127,6 +142,21 @@ export const translations = {
     demoWeather: "Partly cloudy",
     demoBulletinTitle: "Preventive bulletin",
     demoBulletinContent: "Stay informed through official sources and review your family plan.",
+    addLocation: "Add location",
+    locationName: "Name",
+    locationNamePlaceholder: "E.g. Family meeting point",
+    locationType: "Type",
+    locationNotes: "Notes",
+    locationNotesPlaceholder: "Optional additional information",
+    selectLocation: "Select location",
+    selectLocationHelp: "Press and hold on the map to select a location.",
+    personalLocation: "Personal location",
+    meetingPoint: "Meeting point",
+    other: "Other",
+    saveLocation: "Save location",
+    deleteLocation: "Delete location",
+    deleteLocationConfirm: "Do you want to delete this location?",
+    locationRequired: "Select a location on the map"
   },
 };
 
