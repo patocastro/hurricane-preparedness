@@ -1,6 +1,7 @@
 import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSQLiteContext } from "expo-sqlite";
 import { AppScreen } from "../../src/components/AppScreen";
 import { SectionCard } from "../../src/components/SectionCard";
 import { useLanguage } from "../../src/languages/LanguageContext";
@@ -8,108 +9,162 @@ import { colors } from "../../src/theme/colors";
 
 type Task = {
   id: number;
-  es: string;
-  en: string;
-  completed: boolean;
+  title_es: string;
+  title_en: string;
+  is_completed: number;
 };
 
-const initialTasks: Task[] = [
+const initialTasks = [
   {
-    id: 1,
     es: "Preparar el plan familiar de emergencia",
     en: "Prepare the family emergency plan",
-    completed: false,
   },
   {
-    id: 2,
     es: "Identificar el refugio temporal más cercano",
     en: "Identify the nearest temporary shelter",
-    completed: false,
   },
   {
-    id: 3,
     es: "Guardar documentos importantes en un lugar protegido del agua",
     en: "Store important documents in a waterproof location",
-    completed: false,
   },
   {
-    id: 4,
     es: "Preparar agua potable y alimentos no perecederos",
     en: "Prepare drinking water and non-perishable food",
-    completed: false,
   },
   {
-    id: 5,
     es: "Revisar el botiquín y medicamentos necesarios",
     en: "Check the first-aid kit and necessary medications",
-    completed: false,
   },
   {
-    id: 6,
     es: "Preparar linternas, radio y baterías de repuesto",
     en: "Prepare flashlights, radio and spare batteries",
-    completed: false,
   },
   {
-    id: 7,
     es: "Cargar celulares y baterías portátiles",
     en: "Charge phones and portable batteries",
-    completed: false,
   },
   {
-    id: 8,
     es: "Retirar o asegurar objetos sueltos del exterior",
     en: "Remove or secure loose outdoor objects",
-    completed: false,
   },
   {
-    id: 9,
     es: "Revisar instalaciones eléctricas y de gas",
     en: "Check electrical and gas installations",
-    completed: false,
   },
   {
-    id: 10,
     es: "Definir rutas de evacuación y medio de transporte",
     en: "Define evacuation routes and transportation",
-    completed: false,
   },
   {
-    id: 11,
     es: "Guardar teléfonos de emergencia y Protección Civil",
     en: "Save emergency and Civil Protection phone numbers",
-    completed: false,
   },
   {
-    id: 12,
     es: "Revisar los boletines oficiales y el nivel de alerta",
     en: "Check official bulletins and the current alert level",
-    completed: false,
   },
 ];
 
 export default function TasksScreen() {
   const { t, language } = useLanguage();
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const db = useSQLiteContext();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showTaskOptions, setShowTaskOptions] = useState(false);
   const [newTask, setNewTask] = useState("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const toggleTask = (id: number) => {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              completed: !task.completed,
-            }
-          : task
-      )
-    );
+  useEffect(() => {
+    initialiseTasks();
+  }, []);
+  const initialiseTasks = async () => {
+    try {
+      const result =
+        await db.getFirstAsync<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM tasks"
+        );
+      const count = result?.count ?? 0;
+      if (count === 0) {
+        for (const task of initialTasks) {
+          await db.runAsync(
+            `
+            INSERT INTO tasks (
+              title_es,
+              title_en,
+              description_es,
+              description_en,
+              category,
+              is_completed,
+              created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            `,
+            task.es,
+            task.en,
+            null,
+            null,
+            "preparedness",
+            0,
+            new Date().toISOString()
+          );
+        }
+      }
+      await loadTasks();
+    } catch (error) {
+      console.error(
+        "Could not initialise tasks:",
+        error
+      );
+    }
   };
+
+  const loadTasks = async () => {
+    try {
+      const result = await db.getAllAsync<Task>(
+        `
+        SELECT
+          id,
+          title_es,
+          title_en,
+          is_completed
+        FROM tasks
+        ORDER BY id ASC
+        `
+      );
+      setTasks(result);
+    } catch (error) {
+      console.error(
+        "Could not load tasks:",
+        error
+      );
+    }
+  };
+
+  const toggleTask = async (task: Task) => {
+    try {
+      const newCompletedValue =
+        task.is_completed === 1 ? 0 : 1;
+      await db.runAsync(
+        `
+        UPDATE tasks
+        SET is_completed = ?
+        WHERE id = ?
+        `,
+        newCompletedValue,
+        task.id
+      );
+      await loadTasks();
+    } catch (error) {
+      console.error(
+        "Could not update task:",
+        error
+      );
+    }
+  };
+
   const openAddTask = () => {
     setEditingTask(null);
+    setSelectedTask(null);
     setNewTask("");
     setShowTaskForm(true);
   };
@@ -124,45 +179,65 @@ export default function TasksScreen() {
     setEditingTask(selectedTask);
     setNewTask(
       language === "es"
-        ? selectedTask.es
-        : selectedTask.en
+        ? selectedTask.title_es
+        : selectedTask.title_en
     );
     setShowTaskOptions(false);
     setShowTaskForm(true);
   };
-  const saveTask = () => {
+  const saveTask = async () => {
     const trimmedTask = newTask.trim();
     if (!trimmedTask) {
       return;
     }
-    if (editingTask) {
-      setTasks((currentTasks) =>
-        currentTasks.map((task) =>
-          task.id === editingTask.id
-            ? {
-                ...task,
-                es: trimmedTask,
-                en: trimmedTask,
-              }
-            : task
-        )
+    try {
+      if (editingTask) {
+        await db.runAsync(
+          `
+          UPDATE tasks
+          SET
+            title_es = ?,
+            title_en = ?
+          WHERE id = ?
+          `,
+          trimmedTask,
+          trimmedTask,
+          editingTask.id
+        );
+      } else {
+        await db.runAsync(
+          `
+          INSERT INTO tasks (
+            title_es,
+            title_en,
+            description_es,
+            description_en,
+            category,
+            is_completed,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          `,
+          trimmedTask,
+          trimmedTask,
+          null,
+          null,
+          "custom",
+          0,
+          new Date().toISOString()
+        );
+      }
+      await loadTasks();
+      setNewTask("");
+      setEditingTask(null);
+      setSelectedTask(null);
+      setShowTaskForm(false);
+    } catch (error) {
+      console.error(
+        "Could not save task:",
+        error
       );
-    } else {
-      const task: Task = {
-        id: Date.now(),
-        es: trimmedTask,
-        en: trimmedTask,
-        completed: false,
-      };
-      setTasks((currentTasks) => [
-        ...currentTasks,
-        task,
-      ]);
     }
-    setNewTask("");
-    setEditingTask(null);
-    setSelectedTask(null);
-    setShowTaskForm(false);
   };
   const confirmDeleteTask = () => {
     if (!selectedTask) {
@@ -181,13 +256,23 @@ export default function TasksScreen() {
         {
           text: t("confirmDelete"),
           style: "destructive",
-          onPress: () => {
-            setTasks((currentTasks) =>
-              currentTasks.filter(
-                (task) => task.id !== taskToDelete.id
-              )
-            );
-            setSelectedTask(null);
+          onPress: async () => {
+            try {
+              await db.runAsync(
+                `
+                DELETE FROM tasks
+                WHERE id = ?
+                `,
+                taskToDelete.id
+              );
+              await loadTasks();
+              setSelectedTask(null);
+            } catch (error) {
+              console.error(
+                "Could not delete task:",
+                error
+              );
+            }
           },
         },
       ]
@@ -200,7 +285,7 @@ export default function TasksScreen() {
     setSelectedTask(null);
   };
   const completedTasks = tasks.filter(
-    (task) => task.completed
+    (task) => task.is_completed === 1
   ).length;
   const progress =
     tasks.length > 0
@@ -225,49 +310,52 @@ export default function TasksScreen() {
             />
           </View>
         </View>
-        {tasks.map((task) => (
-          <Pressable
-            key={task.id}
-            style={({ pressed }) => [
-              styles.task,
-              pressed && styles.taskPressed,
-            ]}
-            onPress={() => toggleTask(task.id)}
-          >
-            <Ionicons
-              name={
-                task.completed
-                  ? "checkmark-circle"
-                  : "ellipse-outline"
-              }
-              size={27}
-              color={task.completed ? colors.success : colors.mutedText}
-            />
-
-            <View style={styles.taskText}>
-              <Text style={[styles.title, task.completed && styles.completedTitle,]}>
-                {language === "es" ? task.es : task.en}
-              </Text>
-
-              <Text style={[ styles.status, task.completed && styles.completedStatus, ]}>
-                {task.completed ? t("completed") : t("pending")}
-              </Text>
-            </View>
+        {tasks.map((task) => {
+          const completed = task.is_completed === 1;
+          return (
             <Pressable
-              hitSlop={10}
-              onPress={(event) => {
-                event.stopPropagation();
-                openTaskOptions(task);
-              }}
+              key={task.id}
+              style={({ pressed }) => [
+                styles.task,
+                pressed && styles.taskPressed,
+              ]}
+              onPress={() => toggleTask(task)}
             >
               <Ionicons
-                name="ellipsis-vertical"
-                size={21}
-                color={colors.mutedText}
+                name={
+                  completed
+                    ? "checkmark-circle"
+                    : "ellipse-outline"
+                }
+                size={27}
+                color={ completed ? colors.success : colors.mutedText}
               />
+
+              <View style={styles.taskText}>
+                <Text style={[styles.title, completed && styles.completedTitle,]}>
+                  {language === "es" ? task.title_es : task.title_en}
+                </Text>
+
+                <Text style={[ styles.status, completed && styles.completedStatus]}>
+                  {completed ? t("completed") : t("pending")}
+                </Text>
+              </View>
+              <Pressable
+                hitSlop={10}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  openTaskOptions(task);
+                }}
+              >
+                <Ionicons
+                  name="ellipsis-vertical"
+                  size={21}
+                  color={colors.mutedText}
+                />
+              </Pressable>
             </Pressable>
-          </Pressable>
-        ))}
+          );
+        })}
         <Pressable
           style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed, ]}
           onPress={openAddTask}
