@@ -76,7 +76,8 @@ export const translations = {
     saveLocation: "Guardar ubicación",
     deleteLocation: "Eliminar ubicación",
     deleteLocationConfirm: "¿Deseas eliminar esta ubicación?",
-    locationRequired: "Selecciona una ubicación en el mapa"
+    locationRequired: "Selecciona una ubicación en el mapa",
+    directions: "Cómo llegar"
   },
 
   en: {
@@ -156,7 +157,8 @@ export const translations = {
     saveLocation: "Save location",
     deleteLocation: "Delete location",
     deleteLocationConfirm: "Do you want to delete this location?",
-    locationRequired: "Select a location on the map"
+    locationRequired: "Select a location on the map",
+    directions: "Directions",
   },
 };
 

@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import MapView, { LongPressEvent, Marker } from "react-native-maps";
+import MapView, { Callout, LongPressEvent, Marker } from "react-native-maps";
 
 import { AppScreen } from "../../src/components/AppScreen";
 import { SectionCard } from "../../src/components/SectionCard";
@@ -63,6 +63,57 @@ export default function MapScreen() {
       );
     }
   };
+
+  const openDirections = (
+    latitude: number,
+    longitude: number,
+    label: string
+  ) => {
+    const encodedLabel = encodeURIComponent(label);
+    if (Platform.OS === "ios") {
+      Alert.alert(
+        t("directions"),
+        "",
+        [
+          {
+            text: "Apple Maps",
+            onPress: async () => {
+              const url =
+                `http://maps.apple.com/?daddr=${latitude},${longitude}&q=${encodedLabel}`;
+              try {
+                await Linking.openURL(url);
+              } catch (error) {
+                console.error("Could not open Apple Maps:", error);
+              }
+            },
+          },
+          {
+            text: "Google Maps",
+            onPress: async () => {
+              const url =
+                `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+              try {
+                await Linking.openURL(url);
+              } catch (error) {
+                console.error("Could not open Google Maps:", error);
+              }
+            },
+          },
+          {
+            text: t("cancel"),
+            style: "cancel",
+          },
+        ]
+      );
+      return;
+    }
+    const url =
+      `geo:${latitude},${longitude}?q=${latitude},${longitude}(${encodedLabel})`;
+    Linking.openURL(url).catch((error) =>
+      console.error("Could not open maps:", error)
+    );
+  };
+
   const openAddLocation = () => {
     setLocationName("");
     setLocationNotes("");
@@ -165,6 +216,36 @@ export default function MapScreen() {
     );
   };
 
+  const openCustomLocationOptions = (
+    location: CustomLocation
+  ) => {
+    Alert.alert(
+      location.name,
+      location.notes || t("personalLocation"),
+      [
+        {
+          text: t("directions"),
+          onPress: () =>
+            openDirections(
+              location.latitude,
+              location.longitude,
+              location.name
+            ),
+        },
+        {
+          text: t("deleteLocation"),
+          style: "destructive",
+          onPress: () =>
+            confirmDeleteLocation(location),
+        },
+        {
+          text: t("cancel"),
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
   const getCategoryLabel = (
     category: LocationCategory
   ) => {
@@ -199,10 +280,38 @@ export default function MapScreen() {
                 latitude: shelter.latitude,
                 longitude: shelter.longitude,
               }}
-              title={shelter.name}
-              description={shelter.address}
-            />
+            >
+              <Callout
+                onPress={() =>
+                  openDirections(
+                    shelter.latitude,
+                    shelter.longitude,
+                    shelter.name
+                  )
+                }
+              >
+                <View style={styles.calloutContainer}>
+                  <Text style={styles.calloutTitle}>
+                    {shelter.name}
+                  </Text>
+                  <Text style={styles.calloutText}>
+                    {shelter.address}
+                  </Text>
+                  <View style={styles.directionsButton}>
+                    <Ionicons
+                      name="navigate-outline"
+                      size={18}
+                      color={colors.white}
+                    />
+                    <Text style={styles.directionsButtonText}>
+                      {t("directions")}
+                    </Text>
+                  </View>
+                </View>
+              </Callout>
+            </Marker>
           ))}
+
           {customLocations.map((location) => (
             <Marker
               key={`custom-${location.id}`}
@@ -210,16 +319,33 @@ export default function MapScreen() {
                 latitude: location.latitude,
                 longitude: location.longitude,
               }}
-              title={location.name}
-              description={
-                location.notes ||
-                t("personalLocation")
-              }
               pinColor="orange"
-              onCalloutPress={() =>
-                confirmDeleteLocation(location)
-              }
-            />
+            >
+              <Callout
+                onPress={() =>
+                  openCustomLocationOptions(location)
+                }
+              >
+                <View style={styles.calloutContainer}>
+                  <Text style={styles.calloutTitle}>
+                    {location.name}
+                  </Text>
+                  <Text style={styles.calloutText}>
+                    {location.notes || t("personalLocation")}
+                  </Text>
+                  <View style={styles.directionsButton}>
+                    <Ionicons
+                      name="navigate-outline"
+                      size={18}
+                      color={colors.white}
+                    />
+                    <Text style={styles.directionsButtonText}>
+                      {t("directions")}
+                    </Text>
+                  </View>
+                </View>
+              </Callout>
+            </Marker>
           ))}
         </MapView>
       </View>
@@ -647,5 +773,52 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: colors.white,
     fontWeight: "700"
+  },
+
+  calloutTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "700"
+  },
+
+  calloutText: {
+    color: colors.mutedText,
+    fontSize: 13
+  },
+
+  directionsButton: {
+    marginTop: 10,
+    backgroundColor: colors.ocean,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6
+  },
+
+  directionsButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: "700"
+  },
+
+  deleteLocationText: {
+    color: "#c0392b",
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 8,
+    textAlign: "center"
+  },
+
+  calloutContainer: {
+    width: 220,
+    paddingVertical: 6
+  },
+
+  calloutActions: {
+    marginTop: 10,
+    gap: 8
   }
 });
