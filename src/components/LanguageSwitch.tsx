@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 import { useLanguage } from "../languages/LanguageContext";
@@ -20,6 +21,12 @@ export function LanguageSwitch() {
         pressed && styles.buttonPressed,
       ]}
     >
+      <Ionicons
+        name="language-outline"
+        size={16}
+        color={colors.white}
+      />
+
       <Text style={styles.text}>
         {language === "es" ? "EN" : "ES"}
       </Text>
@@ -33,7 +40,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
-    marginRight: 16
+    marginRight: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5
   },
 
   buttonPressed: {
