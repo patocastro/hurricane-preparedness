@@ -15,6 +15,14 @@ Install dependencies:
 npm install
 ```
 
+Sign in to Expo CLI:
+
+```bash
+npx expo login
+```
+
+Make sure you are also signed in to the Expo Go app on your mobile device.
+
 Start the project:
 
 ```bash
